@@ -1,0 +1,31 @@
+{
+  "name": "elgibor-solution/laravel-bri-qris",
+  "description": "Laravel package to integrate BRI QRIS Merchant Presented Mode (MPM) Dynamic: token, generate QR, inquiry, and notification handler.",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "ChatGPT (generated)",
+      "email": "dev@elgibor-solution.com"
+    }
+  ],
+  "require": {
+    "php": ">=8.0",
+    "illuminate/support": "^10|^11",
+    "illuminate/http": "^10|^11",
+    "illuminate/contracts": "^10|^11",
+    "guzzlehttp/guzzle": "^7.9"
+  },
+  "autoload": {
+    "psr-4": {
+      "Elgibor\\BriQris\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Elgibor\\BriQris\\BriQrisServiceProvider"
+      ]
+    }
+  }
+}
