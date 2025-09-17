@@ -1,4 +1,3 @@
-
 <?php
 
 namespace ESolution\BriPayments\Events;

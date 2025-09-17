@@ -1,5 +1,5 @@
-
 <?php
+
 namespace ESolution\BriPayments\Briva;
 
 use ESolution\BriPayments\Support\HttpClient;
