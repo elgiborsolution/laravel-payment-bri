@@ -4,7 +4,12 @@ namespace ESolution\BriPayments\Support;
 
 class NonSnapSignature
 {
-    public function __construct(protected array $config) {}
+    protected array $config;
+
+    public function __construct(array $config = [])
+    {
+        $this->config = $config ?: (config('bri') ?? []);
+    }
 
     public function iso8601UtcNow(): string
     {
