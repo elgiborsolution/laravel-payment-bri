@@ -7,7 +7,12 @@ use RuntimeException;
 
 class SnapSignature
 {
-    public function __construct(protected array $config) {}
+    protected array $config;
+
+    public function __construct(array $config = [])
+    {
+        $this->config = $config ?: (config('bri') ?? []);
+    }
 
     public function iso8601Now(): string { return now()->format('Y-m-d\TH:i:sP'); }
 
