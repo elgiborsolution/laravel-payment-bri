@@ -33,5 +33,12 @@ class BriPaymentsServiceProvider extends ServiceProvider
                 Route::post($cfg2['uri'], [Http\Controllers\BrivaNotificationController::class, 'handle'])->name('bri.briva.notify');
             });
         }
+        
+        $cfg3 = config('bri.briva.notify_tenant');
+        if (($cfg3['enabled'] ?? false) === true) {
+            Route::group([ 'middleware' => $cfg3['middleware'] ?? ['api'] ], function() use ($cfg3) {
+                Route::post($cfg3['uri'], [Http\Controllers\BrivaNotificationMultipleTenantController::class, 'handle'])->name('bri.briva.notify_tenant');
+            });
+        }
     }
 }

@@ -6,15 +6,15 @@ use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use ESolution\BriPayments\Support\NonSnapSignature;
-use ESolution\BriPayments\Events\BrivaPaymentNotified;
+use ESolution\BriPayments\Events\BrivaPaymentTenantNotified;
 
-class BrivaNotificationController extends Controller
+class BrivaNotificationMultipleTenantController extends Controller
 {
-    public function handle(Request $request, NonSnapSignature $sig)
+    public function handle(Request $request, NonSnapSignature $sig, $tenant)
     {
         $token = $request->header('Authorization');
-        $timestamp = $request->header('BRI-Timestamp');
-        $signature = $request->header('BRI-Signature');
+        $timestamp = $request->header('X-TIMESTAMP');
+        $signature = $request->header('X-SIGNATURE');
 
         $absoluteUrl = $request->fullUrl();
         $bodyRaw = json_encode($request->all(), JSON_UNESCAPED_SLASHES);
@@ -23,15 +23,15 @@ class BrivaNotificationController extends Controller
 
         $valid = hash_equals($signature ?? '', $expected) || hash_equals($signature ?? '', $expectedAlt);
 
-        Event::dispatch(new BrivaPaymentNotified($request->all(), [
+        Event::dispatch(new BrivaPaymentTenantNotified($request->all(), [
             'Authorization' => $token,
-            'BRI-Timestamp' => $timestamp,
-            'BRI-Signature' => $signature,
-        ], $valid));
+            'X-TIMESTAMP' => $timestamp,
+            'X-SIGNATURE' => $signature,
+        ], $valid, $tenant));
 
         return response()->json([
-            'responseCode' => $valid ? '0000' : '0102',
-            'responseDescription' => $valid ? 'Success' : 'Invalid Signature',
+            'responseCode' => $valid ? '2003400' : '4013401',
+            'responseMessage' => $valid ? 'Successful' : 'Unauthorized. Verify Client Secret Fail.',
         ]);
     }
 }

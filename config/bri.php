@@ -21,5 +21,6 @@ return [
         'briva_no'         => env('BRI_BRIVA_NUMBER'),
         'timeout'          => env('BRI_BRIVA_TIMEOUT', 30),
         'notify' => ['enabled' => true,'uri' => 'bri/briva/notify','middleware' => ['api'],],
+        'notify_tenant' => ['enabled' => true,'uri' => 'bri/briva/notify/{tenant}','middleware' => ['api'],],
     ],
 ];
