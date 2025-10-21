@@ -19,12 +19,20 @@ class BriPaymentsServiceProvider extends ServiceProvider
 
     public function boot()
     {    
-        Route::aliasMiddleware('auth.b2b', \ESolution\BriPayments\Http\Middleware\AuthB2BMiddleware::class);
+         $this->app['router']->aliasMiddleware(
+            'auth.b2b',
+            \ESolution\BriPayments\Http\Middleware\AuthB2BMiddleware::class
+        );
    
         $this->publishes([ __DIR__.'/../config/bri.php' => config_path('bri.php') ], 'bri-payments-config');
 
-        Route::post('bri/get-signature', [Http\Controllers\AuthTokenB2BController::class, 'getSignature'])->name('bri.briva.signature');
-        
+        Route::post('bri/get-signature-auth', [Http\Controllers\AuthTokenB2BController::class, 'getSignatureAuth'])->name('bri.briva.signature-auth');
+
+        Route::group(['middleware' => 'auth.b2b' ], function() {
+            Route::post('bri/get-signature', [Http\Controllers\AuthTokenB2BController::class, 'getSignature'])->name('bri.briva.signature');
+            Route::post('bri/{tenant}/get-signature', [Http\Controllers\AuthTokenB2BController::class, 'getSignature'])->name('bri.briva.signature-tenant');
+        });
+
         $cfgAuth = config('bri.briva.notify_auth');
         if (($cfgAuth['enabled'] ?? false) === true) {
             Route::group([], function() use ($cfgAuth) {
