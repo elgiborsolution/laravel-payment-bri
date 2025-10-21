@@ -14,11 +14,30 @@ class BriPaymentsServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__.'/../config/bri.php', 'bri');
         $this->app->singleton(QrisClient::class, fn($app) => new QrisClient($app['config']->get('bri')));
         $this->app->singleton(BrivaClient::class, fn($app) => new BrivaClient($app['config']->get('bri')));
+
     }
 
     public function boot()
-    {
+    {    
+        Route::aliasMiddleware('auth.b2b', \ESolution\BriPayments\Http\Middleware\AuthB2BMiddleware::class);
+   
         $this->publishes([ __DIR__.'/../config/bri.php' => config_path('bri.php') ], 'bri-payments-config');
+
+        Route::post('bri/get-signature', [Http\Controllers\AuthTokenB2BController::class, 'getSignature'])->name('bri.briva.signature');
+        
+        $cfgAuth = config('bri.briva.notify_auth');
+        if (($cfgAuth['enabled'] ?? false) === true) {
+            Route::group([], function() use ($cfgAuth) {
+                Route::post($cfgAuth['uri'], [Http\Controllers\AuthTokenB2BController::class, 'handle'])->name('bri.briva.notify_auth');
+            });
+        }
+
+        $cfgAuthTenant = config('bri.briva.notify_tenant_auth');
+        if (($cfgAuthTenant['enabled'] ?? false) === true) {
+            Route::group([], function() use ($cfgAuthTenant) {
+                Route::post($cfgAuthTenant['uri'], [Http\Controllers\AuthTokenB2BController::class, 'handle'])->name('bri.briva.notify_tenant_auth');
+            });
+        }
 
         $cfg = config('bri.qris.notify');
         if (($cfg['enabled'] ?? false) === true) {

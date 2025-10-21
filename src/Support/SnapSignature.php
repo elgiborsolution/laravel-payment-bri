@@ -63,4 +63,61 @@ class SnapSignature
         $ok = openssl_verify($stringToSign, base64_decode($signatureBase64), $pub, OPENSSL_ALGO_SHA256);
         return $ok === 1;
     }
+
+
+    /**
+     * Generate Symmetric API Signature
+     *
+     * @param string $httpMethod  HTTP method, e.g. GET, POST
+     * @param string $endpoint    Endpoint path, e.g. /snap/v1.0/dummy
+     * @param string $accessToken Access token from Authorization header
+     * @param string $clientSecret Client secret
+     * @param array|string $body  Request body
+     * @param string|null $timestamp Optional, ISO8601 timestamp. If null, will use current UTC time.
+     *
+     * @return string
+     */
+    public function generateSignature(
+        string $endpoint,
+        string $httpMethod,
+        string $accessToken,
+        string $clientSecret,
+        $body = '',
+        ?string $timestamp = null
+    ): string {
+        // 1. Set timestamp
+        if (!$timestamp) {
+            $timestamp = now()->utc()->format('Y-m-d\TH:i:s.v\Z'); // ISO8601 with milliseconds + Z
+        }
+
+        // 2. Prepare body hash
+        $bodyString = '';
+
+        if (!empty($body)) {
+            // Jika array, encode json
+            if (is_array($body)) {
+                $body = json_encode($body, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+            // Minify JSON
+            $minBody = preg_replace('/\s+/', '', $body);
+            // SHA256, hex encode, lowercase
+            $bodyHash = strtolower(hash('sha256', $minBody));
+            $bodyString = $bodyHash;
+        }
+
+        // 3. Build stringToSign
+        $stringToSign = sprintf(
+            '%s:%s:%s:%s:%s',
+            strtoupper($httpMethod),
+            $endpoint,
+            $accessToken,
+            $bodyString,
+            $timestamp
+        );
+
+        // 4. Generate HMAC-SHA512 signature
+        $signature = hash_hmac('sha512', $stringToSign, $clientSecret);
+
+        return $signature;
+    }
 }

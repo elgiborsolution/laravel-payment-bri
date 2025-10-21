@@ -20,7 +20,9 @@ return [
         'institution_code' => env('BRI_BRIVA_INSTITUTION_CODE'),
         'briva_no'         => env('BRI_BRIVA_NUMBER'),
         'timeout'          => env('BRI_BRIVA_TIMEOUT', 30),
-        'notify' => ['enabled' => true,'uri' => 'bri/briva/notify','middleware' => ['api'],],
-        'notify_tenant' => ['enabled' => true,'uri' => 'bri/briva/notify/{tenant}','middleware' => ['api'],],
+        'notify_auth' => ['enabled' => true,'uri' => 'bri/{tenant}/snap/v1.0/access-token/b2b'],
+        'notify_tenant_auth' => ['enabled' => true,'uri' => 'bri/{tenant}/snap/v1.0/access-token/b2b'],
+        'notify' => ['enabled' => true,'uri' => 'bri/snap/v1.0/transfer-va/notify-payment-intrabank','middleware' => ['auth.b2b'],],
+        'notify_tenant' => ['enabled' => true,'uri' => 'bri/{tenant}/snap/v1.0/transfer-va/notify-payment-intrabank','middleware' => ['auth.b2b'],],
     ],
 ];
