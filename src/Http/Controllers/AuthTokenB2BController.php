@@ -6,6 +6,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use ESolution\BriPayments\Support\SnapSignature;
 
 class AuthTokenB2BController extends Controller
 {
@@ -96,7 +97,7 @@ class AuthTokenB2BController extends Controller
         ], 200);
     }
 
-    public function getSignature(Request $request, $tenant=null)
+    public function getSignatureAuth(Request $request, $tenant=null)
     {
         // 1. Data untuk signature
         $clientId = $request->header('X-CLIENT-KEY');;
@@ -137,4 +138,54 @@ class AuthTokenB2BController extends Controller
         ];
         return response()->json($headers, 200);
     }
+
+    public function getSignature(Request $request, $tenant = null)
+    {
+        // Ambil header
+        $token = $request->header('Authorization');
+        $timestamp = $request->header('X-TIMESTAMP');
+        $url = $request->header('EndpoinUrl');
+        $method = $request->header('HttpMethod');
+
+        // Validasi header wajib
+        $missing = [];
+        if (!$token) $missing[] = 'Authorization';
+        if (!$timestamp) $missing[] = 'X-TIMESTAMP';
+        if (!$url) $missing[] = 'EndpoinUrl';
+        if (!$method) $missing[] = 'HttpMethod';
+
+        if (!empty($missing)) {
+            return response()->json([
+                'responseCode' => '4003401',
+                'responseMessage' => 'Missing required headers: ' . implode(', ', $missing),
+            ], 400);
+        }
+
+        // Hapus prefix Bearer
+        $token = str_replace('Bearer ', '', $token);
+
+        // Instance SnapSignature
+        $sig = new SnapSignature();
+        $bodyRaw = $request->getContent();
+        $client = $request->client ?? [];
+
+        // Generate signature
+        $xSignature = $sig->generateSignature(
+            $url,
+            $method,
+            $token,
+            $client['client_secret'] ?? '',
+            $bodyRaw,
+            strval($timestamp)
+        );
+
+        // Return header signature
+        $headers = [
+            'X-TIMESTAMP' => $timestamp,
+            'X-SIGNATURE' => $xSignature,
+        ];
+
+        return response()->json($headers, 200);
+    }
+
 }

@@ -22,7 +22,7 @@ class BrivaNotificationMultipleTenantController extends Controller
         $urlSnap = $pos !== false ? substr($url, $pos) : '';
         $bodyRaw = $request->getContent();
         $client = $request->client??[];
-
+        
         $expected = $sig->generateSignature($urlSnap, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
         $expectedAlt = $sig->generateSignature($url, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
 
@@ -36,6 +36,6 @@ class BrivaNotificationMultipleTenantController extends Controller
         return response()->json([
             'responseCode' => $valid ? '2003400' : '4013401',
             'responseMessage' => $valid ? 'Successful' : 'Unauthorized. Verify Client Secret Fail.',
-        ]);
+        ], ($valid ? 200 : 400));
     }
 }
