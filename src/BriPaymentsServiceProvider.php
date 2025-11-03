@@ -10,6 +10,7 @@ use ESolution\BriPayments\Http\Controllers\AuthTokenB2BController;
 use ESolution\BriPayments\Http\Controllers\QrisNotificationController;
 use ESolution\BriPayments\Http\Controllers\BrivaNotificationController;
 use ESolution\BriPayments\Http\Controllers\BrivaNotificationMultipleTenantController;
+use ESolution\BriPayments\Http\Controllers\QrisNotificationMultipleTenantController;
 use ESolution\BriPayments\Http\Middleware\AuthB2BMiddleware;
 
 class BriPaymentsServiceProvider extends ServiceProvider
@@ -92,6 +93,14 @@ class BriPaymentsServiceProvider extends ServiceProvider
             Route::group(['middleware' => $cfgBrivaTenant['middleware'] ?? ['api']], function () use ($cfgBrivaTenant) {
                 Route::post($cfgBrivaTenant['uri'], [BrivaNotificationMultipleTenantController::class, 'handle'])
                     ->name('bri.briva.notify_tenant');
+            });
+        }
+        
+        $cfgQrisTenant = config('bri.qris.notify_tenant');
+        if (($cfgQrisTenant['enabled'] ?? false) === true) {
+            Route::group([ 'middleware' => $cfgQrisTenant['middleware'] ?? ['api'] ], function() use ($cfgQrisTenant) {
+                Route::post($cfgQrisTenant['uri'], [QrisNotificationMultipleTenantController::class, 'handle'])
+                ->name('bri.qris.notify_tenant');
             });
         }
     }
