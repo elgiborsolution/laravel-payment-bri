@@ -6,7 +6,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use ESolution\BriPayments\Support\SnapSignature;
-use ESolution\BriPayments\Events\QrisPaymentNotified;
+use ESolution\BriPayments\Events\QrisPaymentTenantNotified;
 use Illuminate\Support\Facades\Validator;
 
 class QrisNotificationMultipleTenantController extends Controller
@@ -61,7 +61,7 @@ class QrisNotificationMultipleTenantController extends Controller
         $clientId = $client['client_id'] ?? config('bri.common.client_id');
         $stringToSign = $clientId . '|' . ($headers['X-TIMESTAMP'] ?? '');
         $valid = $sig->verifyRsa($stringToSign, $headers['X-SIGNATURE'] ?? '');
-        Event::dispatch(new QrisPaymentNotified($request->all(), $headers, $valid, $tenant));
+        Event::dispatch(new QrisPaymentTenantNotified($request->all(), $headers, $valid, $tenant));
         return response()->json([ 'responseCode' => '2005200', 'responseMessage' => 'Successful' , 'additionalInfo'=> $request->additionalInfo??[]], 200);
     }
 }
