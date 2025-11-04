@@ -2,7 +2,7 @@
 
 namespace ESolution\BriPayments\Events;
 
-class QrisPaymentTenantNotified.
+class QrisPaymentTenantNotified
 {
     public function __construct(
         public array $payload,
