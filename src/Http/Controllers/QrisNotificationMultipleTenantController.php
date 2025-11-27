@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Event;
 use ESolution\BriPayments\Support\SnapSignature;
 use ESolution\BriPayments\Events\QrisPaymentTenantNotified;
 use Illuminate\Support\Facades\Validator;
+use ESolution\BriPayments\Support\BriConfig;
 
 class QrisNotificationMultipleTenantController extends Controller
 {
@@ -58,7 +59,7 @@ class QrisNotificationMultipleTenantController extends Controller
             'X-SIGNATURE'   => $request->header('X-SIGNATURE'),
             'X-TIMESTAMP'   => $request->header('X-TIMESTAMP'),
             'X-PARTNER-ID'  => $request->header('X-PARTNER-ID'),
-            'X-EXTERNAL-ID' => $request->header('X-EXTERNAL-ID') ?? $request->header('X-EXTRENAL-ID'),
+            'X-EXTERNAL-ID' => $request->header('X-EXTERNAL-ID') ?? null,
         ];
         $client = $request->client??[];
         $clientId = $client['client_id'] ?? config('bri.common.client_id');
