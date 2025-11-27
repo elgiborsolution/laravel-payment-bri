@@ -7,11 +7,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use ESolution\BriPayments\Support\SnapSignature;
 use ESolution\BriPayments\Events\BrivaPaymentTenantNotified;
+use ESolution\BriPayments\Support\BriConfig;
 
 class BrivaNotificationMultipleTenantController extends Controller
 {
-    public function handle(Request $request, SnapSignature $sig, $tenant)
+    public function handle(Request $request, $tenant)
     { 
+        $config = BriConfig::for($tenant);
+        $sig  = new SnapSignature($config);
         $token = $request->header('Authorization');
         $timestamp = $request->header('X-TIMESTAMP');
         $signature = $request->header('X-SIGNATURE')??'';
@@ -22,10 +25,10 @@ class BrivaNotificationMultipleTenantController extends Controller
         $urlSnap = $pos !== false ? substr($url, $pos) : '';
         $bodyRaw = $request->getContent();
         $client = $request->client??[];
-        
-        $expected = $sig->generateSignature($urlSnap, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
-        $expectedAlt = $sig->generateSignature($url, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
 
+        $expectedAlt = $sig->generateSignature($url, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
+        $expected = $sig->generateSignature($urlSnap, 'POST', $token, $client['client_secret']??'', $bodyRaw, strval($timestamp));
+        
         $valid = hash_equals($signature, $expected) || hash_equals($signature, $expectedAlt);
         Event::dispatch(new BrivaPaymentTenantNotified($request->all(), [
             'Authorization' => $token,

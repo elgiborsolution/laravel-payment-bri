@@ -7,11 +7,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use ESolution\BriPayments\Support\SnapSignature;
+use ESolution\BriPayments\Support\BriConfig;
 
 class AuthTokenB2BController extends Controller
 {
     
-    public function handle(Request $request, $tenant=null)
+    public function handle(Request $request, $tenant = null)
     {
         $clientId  = $request->header('X-CLIENT-KEY');
         $timestamp = $request->header('X-TIMESTAMP');
@@ -25,10 +26,8 @@ class AuthTokenB2BController extends Controller
             ], 400);
         }
 
-
-        // Regex untuk cek format ISO 8601 dengan milidetik dan timezone
+        // Regex untuk ISO 8601
         $pattern = '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/';
-
         if (!preg_match($pattern, $timestamp)) {
             return response()->json([
                 'responseCode' => '4007301',
@@ -36,7 +35,7 @@ class AuthTokenB2BController extends Controller
             ], 400);
         }
 
-        // Ambil client + public_key dari database
+        // Ambil client
         $query = DB::table('bri_clients')->where('client_id', $clientId);
         if (!empty($tenant)) {
             $query->where('tenant_id', $tenant);
@@ -44,50 +43,94 @@ class AuthTokenB2BController extends Controller
         $client = $query->first();
 
         if (!$client) {
-
             return response()->json([
                 'responseCode' => '4017300',
                 'responseMessage' => 'Unauthorized Client',
             ], 401);
         }
 
-        // Buat stringToSign
+        // String to sign
         $stringToSign = $clientId . '|' . $timestamp;
 
-        // Decode signature dari Base64
+        // Decode signature Base64
         $decodedSignature = base64_decode($signature);
-        $config = config('bri');
-        $publicKeyPath = base_path($config['qris']['public_key_path']);
-        // Cek file ada dan readable
-        if (!file_exists($publicKeyPath) || !is_readable($publicKeyPath)) {
 
-            return response()->json([
-                'responseCode' => '4017301',
-                'responseMessage' => 'Invalid Token (B2B)',
-            ], 401);
-        }
-        $publicKey = openssl_pkey_get_public(file_get_contents($publicKeyPath));
+        $config =  BriConfig::for($tenant);
 
-        $verify = openssl_verify(
-            $stringToSign,
-            $decodedSignature,
-            $publicKey,
-            OPENSSL_ALGO_SHA256
+        // ============================
+        // FUNCTION to load public key
+        // ============================
+        $loadPublicKey = function ($publicKeyString, $publicKeyPath) {
+            // 1. Cek string public key langsung
+            if (!empty($publicKeyString)) {
+                $key = openssl_pkey_get_public($publicKeyString);
+                if ($key !== false) {
+                    return $key;
+                }
+            }
+
+            // 2. Fallback: cek file path
+            if (!empty($publicKeyPath)) {
+                $fullPath = base_path($publicKeyPath);
+
+                if (file_exists($fullPath) && is_readable($fullPath)) {
+                    $content = file_get_contents($fullPath);
+                    $key = openssl_pkey_get_public($content);
+
+                    if ($key !== false) {
+                        return $key;
+                    }
+                }
+            }
+
+            return null;
+        };
+
+        // Load both keys
+        $publicKeyQris = $loadPublicKey(
+            $config['qris']['public_key'] ?? null,
+            $config['qris']['public_key_path'] ?? null
+        );
+        $publicKeyBriva = $loadPublicKey(
+            $config['briva']['public_key'] ?? null,
+            $config['briva']['public_key_path'] ?? null
         );
 
-        if ($verify !== 1) {
+        // Verifikasi
+        $verifyQris = 0;
+        if ($publicKeyQris) {
+            $verifyQris = openssl_verify(
+                $stringToSign,
+                $decodedSignature,
+                $publicKeyQris,
+                OPENSSL_ALGO_SHA256
+            );
+        }
+
+        $verifyBriva = 0;
+        if ($publicKeyBriva) {
+            $verifyBriva = openssl_verify(
+                $stringToSign,
+                $decodedSignature,
+                $publicKeyBriva,
+                OPENSSL_ALGO_SHA256
+            );
+        }
+
+        // Gagal semua verification
+        if ($verifyQris !== 1 && $verifyBriva !== 1) {
             return response()->json([
                 'responseCode' => '4017300',
                 'responseMessage' => 'Unauthorized Signature',
             ], 401);
         }
 
-        // Jika sukses → generate access_token
+        // Generate token
         $token = Str::random(64);
         DB::table('bri_access_tokens')->insert([
-            'client_id'   => $client->id,
-            'token'       => $token,
-            'expires_at'  => now()->addHours(1),
+            'client_id'  => $client->id,
+            'token'      => $token,
+            'expires_at' => now()->addHours(1),
         ]);
 
         return response()->json([
@@ -96,6 +139,7 @@ class AuthTokenB2BController extends Controller
             'expiresIn'   => 3600,
         ], 200);
     }
+
 
     public function getSignatureAuth(Request $request, $tenant=null)
     {
