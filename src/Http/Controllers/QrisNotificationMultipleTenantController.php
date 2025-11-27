@@ -11,21 +11,21 @@ use Illuminate\Support\Facades\Validator;
 
 class QrisNotificationMultipleTenantController extends Controller
 {
-    public function handle(Request $request, SnapSignature $sig, $tenant)
+    public function handle(Request $request, $tenant)
     {
 
         $validator = Validator::make($request->all(), [
-            'originalReferenceNo'         => ['required', 'string', 'max:12'],
-            'originalPartnerReferenceNo'  => ['required', 'string', 'max:6'],
+            'originalReferenceNo'         => ['required', 'string'],
+            'originalPartnerReferenceNo'  => ['required', 'string'],
             'latestTransactionStatus'     => ['nullable', 'string', 'size:2', 'in:00,01,02,03,04,05,06,07'],
-            'transactionStatusDesc'       => ['nullable', 'string', 'max:50'],
-            'customerNumber'              => ['required', 'string', 'max:64'],
-            'accountType'                 => ['nullable', 'string', 'max:25'],
-            'destinationAccountName'      => ['required', 'string', 'max:25'],
+            'transactionStatusDesc'       => ['nullable', 'string'],
+            'customerNumber'              => ['required', 'string'],
+            'accountType'                 => ['nullable', 'string'],
+            'destinationAccountName'      => ['required', 'string'],
             'amount'                      => ['required', 'array'],
             'amount.value'                => ['required', 'numeric', 'min:0'],
             'amount.currency'             => ['required', 'string', 'size:3'],
-            'bankCode'                    => ['nullable', 'string', 'max:8'],
+            'bankCode'                    => ['nullable', 'string'],
             'additionalInfo'              => ['nullable', 'array'],
         ]);
 
@@ -49,6 +49,9 @@ class QrisNotificationMultipleTenantController extends Controller
                 'responseMessage' => "Invalid Field Format {$firstKey}",
             ], 400);
         }
+
+        $config = BriConfig::for($tenant);
+        $sig  = new SnapSignature($config);
 
         $headers = [
             'Authorization' => $request->header('Authorization'),

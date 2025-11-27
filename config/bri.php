@@ -20,6 +20,7 @@ return [
     'briva' => [
         'institution_code' => env('BRI_BRIVA_INSTITUTION_CODE'),
         'briva_no'         => env('BRI_BRIVA_NUMBER'),
+        'public_key_path'  => env('BRI_BRIVA_SNAP_PUBLIC_KEY_PATH'),
         'timeout'          => env('BRI_BRIVA_TIMEOUT', 30),
         'notify_auth' => ['enabled' => true,'uri' => 'bri/{tenant}/snap/v1.0/access-token/b2b'],
         'notify_tenant_auth' => ['enabled' => true,'uri' => 'bri/{tenant}/snap/v1.0/access-token/b2b'],
